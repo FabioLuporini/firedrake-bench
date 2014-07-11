@@ -1,15 +1,11 @@
 from forms import Forms
 from firedrake import *
 from firedrake import __version__ as firedrake_version
-# from pyop2.coffee.ast_plan import V_OP_UAJ
 from pyop2.profiling import get_timers
 from pyop2 import __version__ as pyop2_version
 
 parameters["assembly_cache"]["enabled"] = False
-parameters["coffee"]["licm"] = True
-parameters["coffee"]["ap"] = True
-# Vectorisation caused slowdowns for some forms
-# parameters["coffee"]["vect"] = (V_OP_UAJ, 1)
+parameters["coffee"]["autotune"] = True
 
 meshes = {2: UnitSquareMesh(31, 31), 3: UnitCubeMesh(9, 9, 9)}
 
