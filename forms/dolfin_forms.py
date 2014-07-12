@@ -12,6 +12,7 @@ params["output_dir"] = "kernels"
 parameters["form_compiler"]["optimize"] = True
 parameters["form_compiler"]["cpp_optimize"] = True
 parameters["form_compiler"]["representation"] = "quadrature"
+parameters["form_compiler"]["cpp_optimize_flags"] = '-xAVX'
 
 meshes = {2: UnitSquareMesh(31, 31), 3: UnitCubeMesh(9, 9, 9)}
 
