@@ -29,6 +29,18 @@ def mass(q, p, dim, mesh, nf=0):
     return reduce(inner, f + [it])*dx
 
 
+def helmholtz(q, p, dim, mesh, nf=0):
+    V = FunctionSpace(mesh, "CG", q)
+    P = FunctionSpace(mesh, "CG", p)
+    u = TrialFunction(V)
+    v = TestFunction(V)
+    it = dot(grad(v), grad(u)) + 1.0*v*u
+    f = [Function(P) for _ in range(3)]
+    for f_ in f:
+        f_.interpolate(Expression('1.0'))
+    return reduce(inner, f + [it])*dx
+
+
 def elasticity(q, p, dim, mesh, nf=0):
     V = VectorFunctionSpace(mesh, 'CG', q)
     P = FunctionSpace(mesh, 'CG', p)
