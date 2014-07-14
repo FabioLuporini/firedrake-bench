@@ -7,7 +7,8 @@ class Forms(Benchmark):
 
     params = [('q', [1, 2, 3, 4]),
               ('p', [1, 2, 3, 4]),
-              ('form', ['mass', 'elasticity', 'poisson', 'mixed_poisson', 'helmholtz'])]
+              ('form', ['mass', 'elasticity', 'poisson', 'mixed_poisson',
+                        'helmholtz', 'hyperelasticity'])]
     method = 'forms'
     benchmark = 'Forms'
     plotstyle = {'total': {'marker': '*'},

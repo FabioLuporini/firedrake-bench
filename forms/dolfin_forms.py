@@ -54,6 +54,35 @@ def elasticity(q, p, dim, mesh, nf=0):
     return reduce(inner, f + [it])*dx
 
 
+def hyperelasticity(q, p, dim, mesh, nf=0):
+    V = VectorFunctionSpace(mesh, 'CG', q)
+    P = VectorFunctionSpace(mesh, 'CG', p)
+    v = TestFunction(V)
+    du = TrialFunction(V)  # Incremental displacement
+    u = Function(V)        # Displacement from previous iteration
+    B = Function(V)        # Body force per unit mass
+    # Kinematics
+    d = len(u)
+    I = Identity(d)
+    F = I + grad(u)        # Deformation gradient
+    C = F.T*F              # Right Cauchy-Green tensor
+    E = (C - I)/2          # Euler-Lagrange strain tensor
+    E = variable(E)
+    # Material constants
+    mu = Constant(1.0)     # Lame's constants
+    lmbda = Constant(0.001)
+    # Strain energy function (material model)
+    psi = lmbda/2*(tr(E)**2) + mu*tr(E*E)
+    S = diff(psi, E)       # Second Piola-Kirchhoff stress tensor
+    PK = F*S               # First Piola-Kirchoff stress tensor
+    # Variational problem
+    it = inner(PK, grad(v)) - inner(B, v)
+    f = [Function(P) for _ in range(nf)]
+    for f_ in f:
+        f_.interpolate(Expression('1.0'))
+    return derivative(reduce(inner, f + [it])*dx, u, du)
+
+
 def poisson(q, p, dim, mesh, nf=0):
     V = VectorFunctionSpace(mesh, 'CG', q)
     P = VectorFunctionSpace(mesh, 'CG', p)
