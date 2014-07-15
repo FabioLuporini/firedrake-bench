@@ -80,7 +80,7 @@ def hyperelasticity(q, p, dim, mesh, nf=0):
     f = [Function(P) for _ in range(nf)]
     for f_ in f:
         f_.interpolate(Expression('1.0'))
-    return derivative(reduce(inner, f + [it])*dx, u, du)
+    return derivative(reduce(inner, map(div, f) + [it])*dx, u, du)
 
 
 def poisson(q, p, dim, mesh, nf=0):

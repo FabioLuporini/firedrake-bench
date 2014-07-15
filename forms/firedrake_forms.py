@@ -64,7 +64,7 @@ def hyperelasticity(q, p, dim, mesh, nf=0):
     # Variational problem
     it = inner(PK, grad(v)) - inner(B, v)
     f = [Function(P).assign(1.0) for _ in range(nf)]
-    return derivative(reduce(inner, f + [it])*dx, u, du)
+    return derivative(reduce(inner, map(div, f) + [it])*dx, u, du)
 
 
 def poisson(q, p, dim, mesh, nf=0):
