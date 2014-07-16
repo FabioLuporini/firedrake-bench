@@ -70,7 +70,7 @@ def hyperelasticity(q, p, dim, mesh, nf=0):
     it = inner(PK, grad(v)) - inner(B, v)
     f = [Function(P) for _ in range(nf)]
     for f_ in f:
-        f_.interpolate(Expression('1.0'))
+        f_.interpolate(Expression(('1.0',)*dim))
     return derivative(reduce(inner, map(div, f) + [it])*dx, u, du)
 
 
