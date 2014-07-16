@@ -26,7 +26,7 @@ def helmholtz(q, p, dim, mesh, nf=0):
     u = TrialFunction(V)
     v = TestFunction(V)
     it = dot(grad(v), grad(u)) + 1.0*v*u
-    f = [Function(P) for _ in range(3)]
+    f = [Function(P) for _ in range(nf)]
     for f_ in f:
         f_.interpolate(Expression('1.0'))
     return reduce(inner, f + [it])*dx
