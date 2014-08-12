@@ -21,7 +21,7 @@ if len(sys.argv) == 3:
             filepath = os.path.join("results", f)
             os.rename(filepath, filepath.replace(".dat", "." + suffix + ".dat"))
 name = sys.argv[1]
-default_dir = "/data/FIREDRAKE_RESULTS/BENCH_SUITE_PLOTS_3"
+default_dir = "/data/FIREDRAKE_RESULTS/BENCH_SUITE_PLOTS_2"
 
 # Create directory where to move stuff
 default_dir = os.path.join(default_dir, name)
