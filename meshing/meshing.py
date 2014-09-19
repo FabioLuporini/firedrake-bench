@@ -6,7 +6,7 @@ sizes = [int(2**x) for x in range(1, 6)]
 num_cells = {2: lambda s: [2*x**2 for x in s],
              3: lambda s: [6*x**3 for x in s]}
 
-regions = ['Generate', 'Distribute']
+regions = ['Generate', 'Distribute', 'Refine', 'DistributeOverlap']
 
 class Meshing(Benchmark):
     warmups = 0
@@ -17,11 +17,13 @@ class Meshing(Benchmark):
         args, _ = self.parser().parse_known_args()
         self.meta['dim'] = args.dim
         self.meta['sizes'] = args.size
+        self.meta['refine'] = args.refine
         self.series = {'dim' : self.meta['dim'],
                        'np': op2.MPI.comm.size,
                        'variant': args.branch}
         self.params = [('dim', [self.meta['dim']]),
                        ('size', self.meta['sizes']),
+                       ('refine', [self.meta['refine']]),
                        ('fs', ['scalar'])]
 
     def parser(self, **kwargs):
@@ -32,6 +34,8 @@ class Meshing(Benchmark):
                        help='Mesh sizes to use')
         p.add_argument('--branch', default='master',
                        help='PETSc branch used')
+        p.add_argument('--refine', type=int, default=0,
+                       help='Refine level (regular)')
         return p
 
 if __name__ == '__main__':
@@ -48,14 +52,16 @@ if __name__ == '__main__':
 
     b = Meshing(resultsdir=args.resultsdir, plotdir=args.plotdir)
     if args.weak:
-        b.combine_series([('dim', [args.dim]), ('np', args.weak), ('variant', variants)],
+        b.combine_series([('np', args.weak), ('dim', [args.dim]), ('variant', variants)],
                          filename='DMPlex_UnitMesh')
-        b.plot(xaxis='size', regions=regions, xlabel='mesh size (cells)', groups=groups,
+        b.plot(xaxis='size', regions=regions, xlabel='Mesh size (cells)', groups=groups,
                xvalues=num_cells[b.meta['dim']](b.meta['sizes']),
-               figname=b.name, wscale=0.7, format='pdf')
+               figname='FixedRanks', wscale=0.7, format='pdf',
+               title='DMPlex_UnitMesh: dim=%(dim)d, nprocs=%(np)d' )
 
     if args.parallel:
         b.combine_series([('np', args.parallel), ('dim', [args.dim]), ('variant', variants)],
                          filename='DMPlex_UnitMesh')
         b.plot(xaxis='np', regions=regions, xlabel='Number of processors', groups=groups,
-               figname=b.name, wscale=0.7, format='pdf')
+               figname='FixedSize', wscale=0.7, format='pdf',
+               title='DMPlex_UnitMesh: dim=%(dim)d, size=2^%(size)d')
