@@ -5,7 +5,6 @@ from pyop2.profiling import get_timers
 from pyop2 import __version__ as pyop2_version
 
 parameters["assembly_cache"]["enabled"] = False
-parameters["coffee"]["autotune"] = True
 
 meshes = {2: UnitSquareMesh(31, 31), 3: UnitCubeMesh(9, 9, 9)}
 

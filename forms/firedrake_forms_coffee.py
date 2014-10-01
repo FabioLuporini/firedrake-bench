@@ -1,7 +1,9 @@
 from firedrake_forms import FiredrakeForms
 from firedrake import *
-from pyop2.coffee.ast_plan import V_OP_UAJ
 
+import os
+
+opt_name = ['quadrature-O', 'tensor', 'coffee-base', 'coffee-auto']
 
 class FiredrakeFormsCoffee(FiredrakeForms):
     name = 'FiredrakeFormsCoffee'
@@ -9,16 +11,53 @@ class FiredrakeFormsCoffee(FiredrakeForms):
     params = [('q', [1, 2, 3, 4]),
               ('p', [1, 2, 3, 4]),
               ('form', ['mass', 'elasticity', 'mixed_poisson', 'poisson', 'helmholtz']),
-              ('opt', [(0, False, False, False), (0, False, False, True),
-                       (1, True, False, False), (0, False, True, False)])
+              ('opt', opt_name)
               ]
 
-    def forms(self, q=1, p=1, dim=3, max_nf=3, form='mass', opt=(0, False, False, False)):
-        parameters["coffee"]["licm"] = opt[0]
-        parameters["coffee"]["ap"] = opt[1]
-        parameters["coffee"]["autotune"] = opt[2]
-        parameters["coffee"]["ffc-opt"] = opt[3]
-        parameters["form_compiler"]['optimize'] = opt[3]
+    def forms(self, q=1, p=1, dim=3, max_nf=3, form='mass', opt='plain'):
+        if opt in ["plain"]:
+            parameters["form_compiler"]["representation"] = "quadrature"
+            parameters["form_compiler"]['optimize'] = False
+            parameters["form_compiler"]["pyop2-ir"] = True
+            parameters["coffee"] = { \
+                "compiler": os.environ.get('PYOP2_BACKEND_COMPILER', 'gnu'),
+                "simd_isa": os.environ.get('PYOP2_SIMD_ISA', 'sse')
+            }
+        if opt in ["quadrature-O"]:
+            parameters["form_compiler"]["representation"] = "quadrature"
+            parameters["form_compiler"]['optimize'] = True
+            parameters["form_compiler"]["pyop2-ir"] = True
+            parameters["coffee"] = { \
+                "compiler": os.environ.get('PYOP2_BACKEND_COMPILER', 'gnu'),
+                "simd_isa": os.environ.get('PYOP2_SIMD_ISA', 'sse')
+            }
+        if opt in ["tensor"]:
+            parameters["form_compiler"]["representation"] = "tensor"
+            parameters["form_compiler"]['optimize'] = False
+            parameters["form_compiler"]["pyop2-ir"] = False
+            parameters["coffee"] = { \
+                "compiler": os.environ.get('PYOP2_BACKEND_COMPILER', 'gnu'),
+                "simd_isa": os.environ.get('PYOP2_SIMD_ISA', 'sse')
+            }
+        if opt in ["coffee-base"]:
+            parameters["form_compiler"]["representation"] = "quadrature"
+            parameters["form_compiler"]['optimize'] = False
+            parameters["form_compiler"]["pyop2-ir"] = True
+            parameters["coffee"] = { \
+                "compiler": os.environ.get('PYOP2_BACKEND_COMPILER', 'gnu'),
+                "simd_isa": os.environ.get('PYOP2_SIMD_ISA', 'sse'),
+                "licm": 1,
+                "ap": True
+            }
+        if opt in ["coffee-auto"]:
+            parameters["form_compiler"]["representation"] = "quadrature"
+            parameters["form_compiler"]['optimize'] = False
+            parameters["form_compiler"]["pyop2-ir"] = True
+            parameters["coffee"] = { \
+                "compiler": os.environ.get('PYOP2_BACKEND_COMPILER', 'gnu'),
+                "simd_isa": os.environ.get('PYOP2_SIMD_ISA', 'sse'),
+                "autotune": True
+            }
         super(FiredrakeFormsCoffee, self).forms(q, p, dim, max_nf, form)
 
 if __name__ == '__main__':
@@ -33,17 +72,17 @@ if __name__ == '__main__':
     # Plot
     regions = ['nf %d' % i for i in range(4)]
     b.plot(xaxis='opt', regions=regions, kinds='bar,barlog',
-           xlabel='COFFEE Optimisations (BASE, FFC-OPT, LICM1, AUTO)',
-           xvalues=['0/n/n/n', '0/n/n/y', '1/y/n/n', '0/n/y/n'],
+           xlabel='Local Assembly Execution Mode',
+           xticklabels=opt_name,
            title='%(form)s (single core, 3D, degree q = %(q)d, premultiplying degree p = %(p)d)')
     b.plot(xaxis='opt', regions=regions, kinds='bar',
-           xlabel='COFFEE Optimisations (BASE, FFC-OPT, LICM1, AUTO)',
-           ylabel='Speedup over unoptimised baseline', speedup=((0, False, False, False),),
-           xvalues=['0/n/n/n', '0/n/n/y', '1/y/n/n', '0/n/y/n'],
+           xlabel='Local Assembly Execution Mode',
+           xticklabels=opt_name,
+           ylabel='Speedup over unoptimised code', speedup=('plain',),
            title='%(form)s (single core, 3D, degree q = %(q)d, premultiplying degree p = %(p)d)')
     for i, r in enumerate(regions):
         b.plot(xaxis='opt', regions=[r], kinds='bar,barlog',
-               xlabel='COFFEE Optimisations (BASE, FFC-OPT, LICM1, AUTO)', groups=['form'],
+               xlabel='Local Assembly Execution Mode', groups=['form'],
+               xticklabels=opt_name,
                figname='FiredrakeFormsCoffee_nf%d' % i,
-               xvalues=['0/n/n/n', '0/n/n/y', '1/y/n/n', '0/n/y/n'],
                title=str(i) + ' premultiplying functions (single core, 3D, degree q = %(q)d, premultiplying degree p = %(p)d)')
