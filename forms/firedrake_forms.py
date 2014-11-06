@@ -1,7 +1,11 @@
+import sys
+import itertools
+
 from forms import Forms
 from firedrake import *
 from firedrake import __version__ as firedrake_version
 from pyop2.profiling import get_timers
+from pyop2.exceptions import CompilationError
 from pyop2 import __version__ as pyop2_version
 
 parameters["assembly_cache"]["enabled"] = False
@@ -94,15 +98,40 @@ class FiredrakeForms(Forms):
             'firedrake': firedrake_version,
             'pyop2': pyop2_version}
 
-    def forms(self, q=1, p=1, dim=3, max_nf=3, form='mass', dump_kernel=False):
+    def _runforms(self, f, A, q, p, nf, max_nf, form, test_name):
+        with self.timed_region('nf %d' % nf):
+            try:
+                assemble(f, tensor=A)
+                A.M
+            except CompilationError:
+                # Got an exception while compiling FFC kernels, likely because
+                # the backend compiler couldn't compile fancy unrolled code
+                not_nf = [i for i in range(max_nf + 1) if i not in range(nf)]
+                not_p = [i for i in range(1, 4+1) if i not in range(1, p)]
+                not_q = [i for i in range(1, 4+1) if i not in range(1, q)]
+                for n_nf, n_p, n_q in itertools.product(not_nf, not_p, not_q):
+                    not_run_test_name = test_name % (form, n_q, n_p, n_nf)
+                    self.ffc_failures[not_run_test_name] = 'nf %d' % n_nf
+                # Test case failed, so set its execution time to float_max
+                self.regions['nf %d' % nf] = sys.float_info.max
+                return
+
+    def forms(self, q=1, p=1, dim=3, max_nf=3, form='mass', dump_kernel=False, opt=None):
+        test_name = "opt%s_" % opt + "form%s_q%d_p%d_nf%d"
         mesh = meshes[dim]
         A = assemble(eval(form)(q, p, dim, mesh))
 
         for nf in range(max_nf + 1):
             f = eval(form)(q, p, dim, mesh, nf)
-            with self.timed_region('nf %d' % nf):
-                assemble(f, tensor=A)
-                A.M
+            this_test_name = test_name % (form, q, p, nf)
+            this_test_name_nf = self.ffc_failures.get(this_test_name)
+            if this_test_name_nf:
+                # Useless to add more coefficient functions or increasing their
+                # polynomial order at this point, since we know the test would
+                # fail. So just skip these test cases.
+                self.regions[this_test_name_nf] = sys.float_info.max
+                continue
+            self._runforms(f, A, q, p, nf, max_nf, form, test_name)
             if dump_kernel:
                 for i, k in enumerate(f._kernels):
                     with open('kernels/f_%s%d_q%d_p%d_dim%d_nf%d.c' % (form, i, q, p, dim, nf), 'w') as fil:

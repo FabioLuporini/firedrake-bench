@@ -3,16 +3,22 @@ from firedrake import *
 
 import os
 
-opt_name = ['quadrature-O', 'tensor', 'coffee-base', 'coffee-auto']
+opt_name = ['plain', 'quadrature-O', 'tensor', 'coffee-base', 'coffee-auto']
+speedup_opt_name = [i for i in opt_name if i not in ['plain']]
+
 
 class FiredrakeFormsCoffee(FiredrakeForms):
     name = 'FiredrakeFormsCoffee'
     series = {}
     params = [('q', [1, 2, 3, 4]),
               ('p', [1, 2, 3, 4]),
-              ('form', ['mass', 'elasticity', 'mixed_poisson', 'poisson', 'helmholtz']),
+              ('form', ['mass']),
               ('opt', opt_name)
               ]
+
+    def __init__(self):
+        super(FiredrakeFormsCoffee, self).__init__()
+        self.ffc_failures = {}
 
     def forms(self, q=1, p=1, dim=3, max_nf=3, form='mass', opt='plain'):
         if opt in ["plain"]:
@@ -46,8 +52,7 @@ class FiredrakeFormsCoffee(FiredrakeForms):
             parameters["coffee"] = { \
                 "compiler": os.environ.get('PYOP2_BACKEND_COMPILER', 'gnu'),
                 "simd_isa": os.environ.get('PYOP2_SIMD_ISA', 'sse'),
-                "licm": 1,
-                "ap": True
+                "O1": True
             }
         if opt in ["coffee-auto"]:
             parameters["form_compiler"]["representation"] = "quadrature"
@@ -58,7 +63,7 @@ class FiredrakeFormsCoffee(FiredrakeForms):
                 "simd_isa": os.environ.get('PYOP2_SIMD_ISA', 'sse'),
                 "autotune": True
             }
-        super(FiredrakeFormsCoffee, self).forms(q, p, dim, max_nf, form)
+        super(FiredrakeFormsCoffee, self).forms(q, p, dim, max_nf, form, opt=opt)
 
 if __name__ == '__main__':
     op2.init(log_level='WARNING')
@@ -67,22 +72,21 @@ if __name__ == '__main__':
 
     # Benchmark
     b = FiredrakeFormsCoffee()
+    # Load the test cases that are known to fail due to FFC failure
+    if os.path.exists("ffc_failures.dat"):
+        with open('ffc_failures.dat', 'r') as f:
+            b.ffc_failures = eval(f.read())
     b.main(load=None)
+    # Store the test cases that are known to fail due to FFC failure
+    with open('ffc_failures.dat', 'w+') as f:
+        f.write(str(b.ffc_failures))
 
     # Plot
     regions = ['nf %d' % i for i in range(4)]
-    b.plot(xaxis='opt', regions=regions, kinds='bar,barlog',
-           xlabel='Local Assembly Execution Mode',
-           xticklabels=opt_name,
-           title='%(form)s (single core, 3D, degree q = %(q)d, premultiplying degree p = %(p)d)')
     b.plot(xaxis='opt', regions=regions, kinds='bar',
-           xlabel='Local Assembly Execution Mode',
-           xticklabels=opt_name,
-           ylabel='Speedup over unoptimised code', speedup=('plain',),
+           xlabel='Assembly implementation',
+           xticklabels=speedup_opt_name,
+           format='pdf',
+           ylabel='Speedup over unoptimised code',
+           speedup=('plain',),
            title='%(form)s (single core, 3D, degree q = %(q)d, premultiplying degree p = %(p)d)')
-    for i, r in enumerate(regions):
-        b.plot(xaxis='opt', regions=[r], kinds='bar,barlog',
-               xlabel='Local Assembly Execution Mode', groups=['form'],
-               xticklabels=opt_name,
-               figname='FiredrakeFormsCoffee_nf%d' % i,
-               title=str(i) + ' premultiplying functions (single core, 3D, degree q = %(q)d, premultiplying degree p = %(p)d)')
