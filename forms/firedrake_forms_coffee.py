@@ -3,7 +3,7 @@ from firedrake import *
 
 import os
 
-opt_name = ['plain', 'quadrature-O', 'tensor', 'coffee-base', 'coffee-auto']
+opt_name = ['plain', 'quadrature-O', 'tensor', 'uflacs', 'coffee-base', 'coffee-auto']
 speedup_opt_name = [i for i in opt_name if i not in ['plain']]
 
 
@@ -39,6 +39,14 @@ class FiredrakeFormsCoffee(FiredrakeForms):
             }
         if opt in ["tensor"]:
             parameters["form_compiler"]["representation"] = "tensor"
+            parameters["form_compiler"]['optimize'] = False
+            parameters["form_compiler"]["pyop2-ir"] = False
+            parameters["coffee"] = { \
+                "compiler": os.environ.get('PYOP2_BACKEND_COMPILER', 'gnu'),
+                "simd_isa": os.environ.get('PYOP2_SIMD_ISA', 'sse')
+            }
+        if opt in ["uflacs"]:
+            parameters["form_compiler"]["representation"] = "uflacs"
             parameters["form_compiler"]['optimize'] = False
             parameters["form_compiler"]["pyop2-ir"] = False
             parameters["coffee"] = { \
