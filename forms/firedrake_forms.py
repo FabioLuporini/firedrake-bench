@@ -103,7 +103,7 @@ class FiredrakeForms(Forms):
             try:
                 assemble(f, tensor=A)
                 A.M
-            except CompilationError:
+            except (MemoryError, CompilationError):
                 # Got an exception while compiling FFC kernels, likely because
                 # the backend compiler couldn't compile fancy unrolled code
                 not_nf = [i for i in range(max_nf + 1) if i not in range(nf)]
