@@ -5,6 +5,14 @@ import os
 
 opt_name = ['plain', 'quadrature-O', 'tensor', 'uflacs', 'coffee-base', 'coffee-auto']
 speedup_opt_name = [i for i in opt_name if i not in ['plain']]
+form = 'hyperelasticity'
+form_max_nf = {
+    'mass': 3,
+    'helmholtz': 3,
+    'poisson': 3,
+    'elasticity': 3,
+    'hyperelasticity': 0
+}
 
 
 class FiredrakeFormsCoffee(FiredrakeForms):
@@ -12,7 +20,7 @@ class FiredrakeFormsCoffee(FiredrakeForms):
     series = {}
     params = [('q', [1, 2, 3, 4]),
               ('p', [1, 2, 3, 4]),
-              ('form', ['mass']),
+              ('form', [form]),
               ('opt', opt_name)
               ]
 
@@ -25,7 +33,7 @@ class FiredrakeFormsCoffee(FiredrakeForms):
             parameters["form_compiler"]["representation"] = "quadrature"
             parameters["form_compiler"]['optimize'] = False
             parameters["form_compiler"]["pyop2-ir"] = True
-            parameters["coffee"] = { \
+            parameters["coffee"] = {
                 "compiler": os.environ.get('PYOP2_BACKEND_COMPILER', 'gnu'),
                 "simd_isa": os.environ.get('PYOP2_SIMD_ISA', 'sse')
             }
@@ -33,7 +41,7 @@ class FiredrakeFormsCoffee(FiredrakeForms):
             parameters["form_compiler"]["representation"] = "quadrature"
             parameters["form_compiler"]['optimize'] = True
             parameters["form_compiler"]["pyop2-ir"] = True
-            parameters["coffee"] = { \
+            parameters["coffee"] = {
                 "compiler": os.environ.get('PYOP2_BACKEND_COMPILER', 'gnu'),
                 "simd_isa": os.environ.get('PYOP2_SIMD_ISA', 'sse')
             }
@@ -41,7 +49,7 @@ class FiredrakeFormsCoffee(FiredrakeForms):
             parameters["form_compiler"]["representation"] = "tensor"
             parameters["form_compiler"]['optimize'] = False
             parameters["form_compiler"]["pyop2-ir"] = False
-            parameters["coffee"] = { \
+            parameters["coffee"] = {
                 "compiler": os.environ.get('PYOP2_BACKEND_COMPILER', 'gnu'),
                 "simd_isa": os.environ.get('PYOP2_SIMD_ISA', 'sse')
             }
@@ -49,7 +57,7 @@ class FiredrakeFormsCoffee(FiredrakeForms):
             parameters["form_compiler"]["representation"] = "uflacs"
             parameters["form_compiler"]['optimize'] = False
             parameters["form_compiler"]["pyop2-ir"] = False
-            parameters["coffee"] = { \
+            parameters["coffee"] = {
                 "compiler": os.environ.get('PYOP2_BACKEND_COMPILER', 'gnu'),
                 "simd_isa": os.environ.get('PYOP2_SIMD_ISA', 'sse')
             }
@@ -57,7 +65,7 @@ class FiredrakeFormsCoffee(FiredrakeForms):
             parameters["form_compiler"]["representation"] = "quadrature"
             parameters["form_compiler"]['optimize'] = False
             parameters["form_compiler"]["pyop2-ir"] = True
-            parameters["coffee"] = { \
+            parameters["coffee"] = {
                 "compiler": os.environ.get('PYOP2_BACKEND_COMPILER', 'gnu'),
                 "simd_isa": os.environ.get('PYOP2_SIMD_ISA', 'sse'),
                 "O1": True
@@ -66,12 +74,12 @@ class FiredrakeFormsCoffee(FiredrakeForms):
             parameters["form_compiler"]["representation"] = "quadrature"
             parameters["form_compiler"]['optimize'] = False
             parameters["form_compiler"]["pyop2-ir"] = True
-            parameters["coffee"] = { \
+            parameters["coffee"] = {
                 "compiler": os.environ.get('PYOP2_BACKEND_COMPILER', 'gnu'),
                 "simd_isa": os.environ.get('PYOP2_SIMD_ISA', 'sse'),
                 "autotune": True
             }
-        super(FiredrakeFormsCoffee, self).forms(q, p, dim, max_nf, form, opt=opt)
+        super(FiredrakeFormsCoffee, self).forms(q, p, dim, form_max_nf[form], form, opt=opt)
 
 if __name__ == '__main__':
     op2.init(log_level='WARNING')
@@ -90,7 +98,7 @@ if __name__ == '__main__':
         f.write(str(b.ffc_failures))
 
     # Plot
-    regions = ['nf %d' % i for i in range(4)]
+    regions = ['nf %d' % i for i in range(form_max_nf[form])]
     b.plot(xaxis='opt', regions=regions, kinds='bar',
            xlabel='Assembly implementation',
            xticklabels=speedup_opt_name,
