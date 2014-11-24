@@ -116,13 +116,29 @@ class FiredrakeForms(Forms):
                 self.regions['nf %d' % nf] = sys.float_info.max
                 return
 
+    def _is_special_case(self, opt, form):
+        if opt == 'tensor' and form == 'hyperelasticity':
+            # - tensor doesn't work with hyperelasticity
+            return True
+        return False
+
     def forms(self, q=1, p=1, dim=3, max_nf=3, form='mass', dump_kernel=False, opt=None):
         test_name = "opt%s_" % opt + "form%s_q%d_p%d_nf%d"
+        task = 'Assemble cells'
+
+        if self._is_special_case(opt, form):
+            for nf in range(max_nf + 1):
+                this_test_name = test_name % (form, q, p, nf)
+                this_nf = 'nf %d' % nf
+                self.ffc_failures[this_test_name] = this_nf
+                self.regions[this_nf] = sys.float_info.max
+            self.register_timing(task, sys.float_info.max)
+            return
+
         mesh = meshes[dim]
         A = assemble(eval(form)(q, p, dim, mesh))
 
         for nf in range(max_nf + 1):
-            f = eval(form)(q, p, dim, mesh, nf)
             this_test_name = test_name % (form, q, p, nf)
             this_test_name_nf = self.ffc_failures.get(this_test_name)
             if this_test_name_nf:
@@ -131,13 +147,13 @@ class FiredrakeForms(Forms):
                 # fail. So just skip these test cases.
                 self.regions[this_test_name_nf] = sys.float_info.max
                 continue
+            f = eval(form)(q, p, dim, mesh, nf)
             self._runforms(f, A, q, p, nf, max_nf, form, test_name)
             if dump_kernel:
                 for i, k in enumerate(f._kernels):
                     with open('kernels/f_%s%d_q%d_p%d_dim%d_nf%d.c' % (form, i, q, p, dim, nf), 'w') as fil:
                         fil.write(k[-1].code)
         t = get_timers(reset=True)
-        task = 'Assemble cells'
         self.register_timing(task, t[task].total)
 
 if __name__ == '__main__':

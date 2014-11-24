@@ -98,7 +98,7 @@ if __name__ == '__main__':
         f.write(str(b.ffc_failures))
 
     # Plot
-    regions = ['nf %d' % i for i in range(form_max_nf[form])]
+    regions = ['nf %d' % i for i in range(form_max_nf[form]+1)]
     b.plot(xaxis='opt', regions=regions, kinds='bar',
            xlabel='Assembly implementation',
            xticklabels=speedup_opt_name,
