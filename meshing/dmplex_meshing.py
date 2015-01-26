@@ -3,6 +3,8 @@ from firedrake import op2
 from firedrake.petsc import PETSc
 
 regions = ['Generate', 'Distribute', 'Refine', 'DistributeOverlap']
+petsc_events = ['Mesh Partition', 'Mesh Migration']
+regions += petsc_events
 
 class DMPlexMeshing(Meshing):
     benchmark = 'DMPlex_UnitMesh'
@@ -12,6 +14,9 @@ class DMPlexMeshing(Meshing):
     profileregions = regions
 
     def meshing(self, size=32, degree=1, dim=2, fs='scalar', refine=0):
+        log = PETSc.Log()
+        log.begin()
+
         with self.timed_region('Generate'):
             boundary = PETSc.DMPlex().create(op2.MPI.comm)
             boundary.setDimension(dim-1)
@@ -31,6 +36,10 @@ class DMPlexMeshing(Meshing):
 
         with self.timed_region('DistributeOverlap'):
             plex.distributeOverlap(overlap=1)
+
+        for eventname in petsc_events:
+            info = log.Event(eventname).getPerfInfo()
+            self.register_timing(eventname, info['time'])
 
 if __name__ == '__main__':
     op2.init(log_level='WARNING')

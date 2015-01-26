@@ -7,6 +7,8 @@ num_cells = {2: lambda s: [2*x**2 for x in s],
              3: lambda s: [6*x**3 for x in s]}
 
 regions = ['Generate', 'Distribute', 'Refine', 'DistributeOverlap']
+petsc_events = ['Mesh Partition', 'Mesh Migration']
+regions += petsc_events
 
 class Meshing(Benchmark):
     warmups = 0
