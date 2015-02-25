@@ -6,9 +6,13 @@ sizes = [int(2**x) for x in range(1, 6)]
 num_cells = {2: lambda s: [2*x**2 for x in s],
              3: lambda s: [6*x**3 for x in s]}
 
-regions = ['Generate', 'Distribute', 'Refine', 'DistributeOverlap']
-petsc_events = ['Mesh Partition', 'Mesh Migration']
-regions += petsc_events
+regions = ['Distribute', 'DistributeOverlap']
+petsc_events = { 'Distribute': ['Mesh Partition', 'Mesh Migration'],
+                 'Overlap' : ['Mesh Partition', 'Mesh Migration']}
+
+for stage, events in petsc_events.iteritems():
+    for event in events:
+        regions.append( "%s::%s" % (stage, event) )
 
 class Meshing(Benchmark):
     warmups = 0
@@ -64,6 +68,7 @@ if __name__ == '__main__':
     if args.parallel:
         b.combine_series([('np', args.parallel), ('dim', [args.dim]), ('variant', variants)],
                          filename='DMPlex_UnitMesh')
-        b.plot(xaxis='np', regions=regions, xlabel='Number of processors', groups=groups,
-               figname='FixedSize', wscale=0.7, format='pdf',
+        b.plot(xaxis='np', regions=regions, groups=groups, kinds='plot,loglog',
+               xlabel='Number of processors', xticklabels=args.parallel,
+               figname='DMPlexDistribute', wscale=0.7, format='pdf',
                title='DMPlex_UnitMesh: dim=%(dim)d, size=2^%(size)d')
