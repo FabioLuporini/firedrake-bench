@@ -28,6 +28,7 @@ class DMPlexMeshing(Meshing):
             boundary.setDimension(dim-1)
             if dim == 2:
                 boundary.createSquareBoundary([0., 0.], [1., 1.], [size, size])
+                boundary.setTriangleOptions("pqezQYSl")
             elif dim == 3:
                 boundary.createCubeBoundary([0., 0., 0.], [1., 1., 1.], [size, size, size])
             plex = PETSc.DMPlex().generate(boundary)

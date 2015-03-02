@@ -26,6 +26,7 @@ class Meshing(Benchmark):
         self.meta['refine'] = args.refine
         self.series = {'dim' : self.meta['dim'],
                        'np': op2.MPI.comm.size,
+                       'refine': self.meta['refine'],
                        'variant': args.branch}
         self.params = [('dim', [self.meta['dim']]),
                        ('size', self.meta['sizes']),
