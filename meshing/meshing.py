@@ -24,11 +24,16 @@ class Meshing(Benchmark):
         self.meta['dim'] = args.dim
         self.meta['sizes'] = args.size
         self.meta['refine'] = args.refine
+        self.meta['np'] = op2.MPI.comm.size
+        self.meta['partitioner'] = [args.partitioner]
+        self.meta['redistribute'] = [args.redistribute]
         self.series = {'dim' : self.meta['dim'],
-                       'np': op2.MPI.comm.size,
+                       'np': self.meta['np'],
                        'variant': args.branch}
         self.params = [('size', self.meta['sizes']),
-                       ('refine', self.meta['refine'])]
+                       ('refine', self.meta['refine']),
+                       ('partitioner', self.meta['partitioner']),
+                       ('redistribute', self.meta['redistribute'])]
 
     def parser(self, **kwargs):
         p = super(Meshing, self).parser(**kwargs)
@@ -40,7 +45,14 @@ class Meshing(Benchmark):
                        help='PETSc branch used')
         p.add_argument('--refine', type=int, default=[0], nargs='+',
                        help='Refine level (regular)')
+        p.add_argument('--partitioner', default='chaco',
+                       help='Partitioner used for initial distribution')
+        p.add_argument('--redistribute', default=0,
+                       help='Re-distribute DMPlex again after initial distribution')
         return p
+
+    def num_cells(self, size):
+        return num_cells[self.meta['dim']](size)
 
 if __name__ == '__main__':
     p = parser(description="Plot results for meshing benchmark")
@@ -52,20 +64,19 @@ if __name__ == '__main__':
                    help='PETSc branches to plot')
     p.add_argument('--refine', type=int, default=[0], nargs='+',
                    help='Refine level (regular)')
+    p.add_argument('--partitioner', default='chaco',
+                   help='Partitioner used for initial distribution')
     args = p.parse_args()
     variants = args.branch or ['master']
     groups = ['variant'] if len(args.branch) > 1 else []
 
     b = Meshing(resultsdir=args.resultsdir, plotdir=args.plotdir)
-    if args.weak:
-        b.combine_series([('np', args.weak), ('dim', [args.dim]), ('variant', variants),
-                          ('refine', args.refine)], filename='DMPlex_UnitMesh')
-        b.plot(xaxis='size', regions=regions, xlabel='Mesh size (cells)', groups=groups,
-               xvalues=num_cells[b.meta['dim']](b.meta['sizes']),
-               figname='FixedRanks', wscale=0.7, format='pdf',
-               title='DMPlex_UnitMesh: dim=%(dim)d, nprocs=%(np)d' )
 
     if len(args.refine) > 1:
+        # Parallel refinement plots take the first "size" param and
+        # plot timings for the equivalent meshes with the specified
+        # refinement levels, eg. -m 8 --refine 0 1 2 will plot:
+        #     (m=8, r=0), (m=4, r=1) and (m=2, r=2)
         import matplotlib.pyplot as plt
         import matplotlib as mpl
         from os import path
@@ -98,7 +109,8 @@ if __name__ == '__main__':
             regions = regionstyles.keys()
 
             m = args.size[0] / 2**r
-            params = {'dim': args.dim, 'variant': 'master'}
+            params = {'dim': args.dim, 'variant': args.branch[0],
+                      'partitioner': args.partitioner}
             groups = {'refine': [r], 'size': [m]}
             labels = {(r, m): "size %d, refine %d" % (m, r)}
             b.subplot(ax, xaxis='np', kind='loglog', xvals=args.parallel,

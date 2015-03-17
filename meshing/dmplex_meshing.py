@@ -1,10 +1,14 @@
 from meshing import Meshing
 from firedrake import op2
 from firedrake.petsc import PETSc
+import numpy as np
 
 regions = ['Generate', 'Distribute', 'Refine', 'DistributeOverlap']
 petsc_events = { 'Distribute': ['Mesh Partition', 'Mesh Migration'],
-                 'Overlap' : ['Mesh Partition', 'Mesh Migration']}
+                 'Overlap': ['Mesh Partition', 'Mesh Migration'],
+                 'Redistribute': ['Mesh Partition', 'Mesh Migration']}
+
+seed = 8957382
 
 for stage, events in petsc_events.iteritems():
     for event in events:
@@ -17,10 +21,11 @@ class DMPlexMeshing(Meshing):
     method = 'meshing'
     profileregions = regions
 
-    def meshing(self, size=32, degree=1, dim=2, fs='scalar', refine=0):
+    def meshing(self, dim=2, size=32, refine=0, partitioner="chaco", redistribute=0):
         log = PETSc.Log()
-        stage_dist = log.Stage("Distribute")
         stage_ol = log.Stage("Overlap")
+        stage_dist = log.Stage("Distribute")
+        stage_redist = log.Stage("Redistribute")
         log.begin()
 
         with self.timed_region('Generate'):
@@ -33,21 +38,54 @@ class DMPlexMeshing(Meshing):
                 boundary.createCubeBoundary([0., 0., 0.], [1., 1., 1.], [size, size, size])
             plex = PETSc.DMPlex().generate(boundary)
 
+        # Set prescribed partitioner
+        part = plex.getPartitioner()
+        part.setType(partitioner)
+        part.setUp()
+
+        if partitioner == "shell":
+            # Create a random (bad!) partitioning
+            nprocs = self.meta['np']
+            ncells = self.num_cells([size])[0]
+            if op2.MPI.comm.rank == 0:
+                np.random.seed(seed)
+                points = np.random.choice(np.arange(ncells, dtype=np.int32),
+                                          ncells, replace=False)
+                sizes = [ncells / nprocs for _ in range(nprocs)]
+            else:
+                points = np.zeros(0, dtype=np.int32)
+                sizes = np.zeros(nprocs, dtype=np.int32)
+            part.setShellPartition(nprocs, sizes, points)
+
+        stage_dist.push()
         with self.timed_region('Distribute'):
-            stage_dist.push()
             plex.distribute(overlap=0)
-            stage_dist.pop()
+        stage_dist.pop()
 
         with self.timed_region('Refine'):
             plex.setRefinementUniform(True)
             for i in range(refine):
                 plex = plex.refine()
 
+        stage_ol.push()
         with self.timed_region('DistributeOverlap'):
-            stage_ol.push()
-            plex.distributeOverlap(overlap=1)
-            stage_ol.push()
+            overlap = 0 if redistribute > 0 else 1
+            plex.distributeOverlap(overlap=overlap)
+        stage_ol.push()
 
+        if redistribute > 0:
+            # Switch to parmetis for parallel re-partitioning
+            part = plex.getPartitioner()
+            part.setType("parmetis")
+            part.setUp()
+
+            # Re-distribute plex with new partitioning
+            stage_redist.push()
+            with self.timed_region('Distribute'):
+                plex.distribute(overlap)
+            stage_redist.pop()
+
+        # Extract petsc timings from log object
         for stage, events in petsc_events.iteritems():
             for event in events:
                 info = log.Event(event).getPerfInfo(log.Stage(stage))
