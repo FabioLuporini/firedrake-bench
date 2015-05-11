@@ -2,6 +2,7 @@ from meshing import Meshing
 from firedrake import op2
 from firedrake.petsc import PETSc
 import numpy as np
+import uuid
 
 regions = ['Generate', 'Distribute', 'Refine', 'DistributeOverlap']
 petsc_events = { 'Distribute': ['Mesh Partition', 'Mesh Migration'],
@@ -22,10 +23,13 @@ class DMPlexMeshing(Meshing):
     profileregions = regions
 
     def meshing(self, dim=2, size=32, refine=0, partitioner="chaco", redistribute=0):
+        # HACK-ALERT: Resetting counters via PETSc.Log().destroy()
+        # causes errors, so we add a unique ID to the stages.
+        unique = str(uuid.uuid1())
         log = PETSc.Log()
-        stage_ol = log.Stage("Overlap")
-        stage_dist = log.Stage("Distribute")
-        stage_redist = log.Stage("Redistribute")
+        stage_ol = log.Stage(unique+"Overlap")
+        stage_dist = log.Stage(unique+"Distribute")
+        stage_redist = log.Stage(unique+"Redistribute")
         log.begin()
 
         with self.timed_region('Generate'):
@@ -88,7 +92,7 @@ class DMPlexMeshing(Meshing):
         # Extract petsc timings from log object
         for stage, events in petsc_events.iteritems():
             for event in events:
-                info = log.Event(event).getPerfInfo(log.Stage(stage))
+                info = log.Event(event).getPerfInfo(log.Stage(unique+stage))
                 self.register_timing("%s::%s" % (stage, event), info['time'])
 
 
