@@ -93,7 +93,8 @@ class DMPlexMeshing(Meshing):
         for stage, events in petsc_events.iteritems():
             for event in events:
                 info = log.Event(event).getPerfInfo(log.Stage(unique+stage))
-                self.register_timing("%s::%s" % (stage, event), info['time'])
+                for key in info.keys():
+                    self.register_timing("%s::%s::%s" % (stage, event, key), info[key])
 
 
 if __name__ == '__main__':
