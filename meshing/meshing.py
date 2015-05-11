@@ -72,9 +72,12 @@ if __name__ == '__main__':
                    help='Partitioner used for initial distribution')
     p.add_argument('--redistribute', default=0,
                    help='Redisitrbute mesh for load balance')
+    p.add_argument('--notitle', action='store_true', dest='notitle', default=False,
+                   help='Remove titles from generated plots')
     args = p.parse_args()
     variants = args.branch or ['master']
     groups = ['variant'] if len(args.branch) > 1 else []
+    figsize = (8, 8)
 
     b = Meshing(resultsdir=args.resultsdir, plotdir=args.plotdir)
 
@@ -87,7 +90,6 @@ if __name__ == '__main__':
                           ('variant', variants)], filename='DMPlex_UnitMesh')
 
         # Create a figure
-        figsize = (9, 6)
         fig = plt.figure("DMPlexDistribute_refine.pdf", figsize=figsize, dpi=300)
         ax = fig.add_subplot(111)
         # Precompute colormap
@@ -114,14 +116,14 @@ if __name__ == '__main__':
                       'partitioner': args.partitioner, 'redistribute': 0}
             groups = {'refine': [r], 'size': [m]}
             labels = {(r, m): "size %d, refine %d" % (m, r)}
+            title = '' if args.notitle else 'Mesh Distribution with Parallel Refinement'
             b.subplot(ax, xaxis='np', kind='loglog', xvals=args.parallel,
                       xlabel='Number of processors', xticklabels=args.parallel,
-                      title='DMPlexDistribute with Parallel Refinement',
                       regions=regions, groups=groups, params=params,
                       plotstyle=regionstyles, axis='tight',
-                      labels='long', legend={'loc': 'best'})
+                      labels='long', title=title, legend={'loc': 'best'})
 
-        fname = "ParallelRefine_loglog_dim%d_partitioner%s_variant%s.pdf" % (args.dim, args.partitioner, 'master')
+        fname = "Refine_loglog_dim%d_partitioner%s_variant%s.pdf" % (args.dim, args.partitioner, 'master')
         fpath = path.join(args.plotdir, fname)
         fig.savefig(path.join(args.plotdir, fname),
                     orientation='landscape', format="pdf",
@@ -131,23 +133,27 @@ if __name__ == '__main__':
         regions = ['Redistribute::Mesh Partition', 'Redistribute::Mesh Migration']
         # Precompute colormap
         cmap = mpl.cm.get_cmap("Set1")
-        colors = [cmap(i) for i in np.linspace(0, 0.5, 4)]
+        colors = [cmap(i) for i in np.linspace(0, 0.9, 6)]
 
-        b.combine_series([('np', args.parallel), ('dim', [args.dim]), ('variant', variants)],
-                         filename='DMPlex_UnitMesh')
+        b.combine_series([('np', args.parallel), ('dim', [args.dim]),
+                          ('variant', variants)], filename='DMPlex_UnitMesh')
 
+        title = '' if args.notitle else 'Mesh distribution (all-to-all)'
         b.plot(xaxis='np', regions=regions, groups=groups, kinds='plot,loglog',
                xlabel='Number of processors', xticklabels=args.parallel,
-               colors=colors, axis='tight', figsize=(9,3),
-               figname='Mesh Redistribution', wscale=0.7, format='pdf',
-               title='DMPlexDistribute from parallel mesh')
+               colors=colors, axis='tight', figsize=figsize,
+               figname='LoadBalance', title=title, format='pdf')
 
     elif args.parallel:
-        b.combine_series([('np', args.parallel), ('dim', [args.dim]), ('variant', variants)],
-                         filename='DMPlex_UnitMesh')
+        # Precompute colormap
+        cmap = mpl.cm.get_cmap("Set1")
+        colors = [cmap(i) for i in np.linspace(0, 0.9, 6)]
 
+        b.combine_series([('np', args.parallel), ('dim', [args.dim]),
+                         ('variant', variants)], filename='DMPlex_UnitMesh')
+
+        title = '' if args.notitle else 'Mesh distribution (one-to-all)'
         b.plot(xaxis='np', regions=regions, groups=groups, kinds='plot,loglog',
                xlabel='Number of processors', xticklabels=args.parallel,
-               colormap = "Set1", axis='tight',
-               figname='DMPlexDistribute', wscale=0.7, format='pdf',
-               title='DMPlex_UnitMesh: dim=%(dim)d, size=2^%(size)d')
+               colors=colors, axis='tight', figsize=figsize,
+               figname='Distribute', title=title, format='pdf')
