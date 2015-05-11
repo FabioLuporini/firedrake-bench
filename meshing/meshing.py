@@ -1,5 +1,9 @@
 from pybench import Benchmark, parser
 from firedrake import op2
+import matplotlib.pyplot as plt
+import matplotlib as mpl
+from os import path
+import numpy as np
 
 sizes = [int(2**x) for x in range(1, 6)]
 
@@ -66,6 +70,8 @@ if __name__ == '__main__':
                    help='Refine level (regular)')
     p.add_argument('--partitioner', default='chaco',
                    help='Partitioner used for initial distribution')
+    p.add_argument('--redistribute', default=0,
+                   help='Redisitrbute mesh for load balance')
     args = p.parse_args()
     variants = args.branch or ['master']
     groups = ['variant'] if len(args.branch) > 1 else []
@@ -77,11 +83,6 @@ if __name__ == '__main__':
         # plot timings for the equivalent meshes with the specified
         # refinement levels, eg. -m 8 --refine 0 1 2 will plot:
         #     (m=8, r=0), (m=4, r=1) and (m=2, r=2)
-        import matplotlib.pyplot as plt
-        import matplotlib as mpl
-        from os import path
-        import numpy as np
-
         b.combine_series([('np', args.parallel), ('dim', [args.dim]),
                           ('variant', variants)], filename='DMPlex_UnitMesh')
 
@@ -110,7 +111,7 @@ if __name__ == '__main__':
 
             m = args.size[0] / 2**r
             params = {'dim': args.dim, 'variant': args.branch[0],
-                      'partitioner': args.partitioner}
+                      'partitioner': args.partitioner, 'redistribute': 0}
             groups = {'refine': [r], 'size': [m]}
             labels = {(r, m): "size %d, refine %d" % (m, r)}
             b.subplot(ax, xaxis='np', kind='loglog', xvals=args.parallel,
@@ -120,11 +121,26 @@ if __name__ == '__main__':
                       plotstyle=regionstyles, axis='tight',
                       labels='long', legend={'loc': 'best'})
 
-        fname = "ParallelRefine_loglog_dim%d_variant%s.pdf" % (args.dim, 'master')
+        fname = "ParallelRefine_loglog_dim%d_partitioner%s_variant%s.pdf" % (args.dim, args.partitioner, 'master')
         fpath = path.join(args.plotdir, fname)
         fig.savefig(path.join(args.plotdir, fname),
                     orientation='landscape', format="pdf",
                     transparent=True, bbox_inches='tight')
+
+    elif args.redistribute > 0:
+        regions = ['Redistribute::Mesh Partition', 'Redistribute::Mesh Migration']
+        # Precompute colormap
+        cmap = mpl.cm.get_cmap("Set1")
+        colors = [cmap(i) for i in np.linspace(0, 0.5, 4)]
+
+        b.combine_series([('np', args.parallel), ('dim', [args.dim]), ('variant', variants)],
+                         filename='DMPlex_UnitMesh')
+
+        b.plot(xaxis='np', regions=regions, groups=groups, kinds='plot,loglog',
+               xlabel='Number of processors', xticklabels=args.parallel,
+               colors=colors, axis='tight', figsize=(9,3),
+               figname='Mesh Redistribution', wscale=0.7, format='pdf',
+               title='DMPlexDistribute from parallel mesh')
 
     elif args.parallel:
         b.combine_series([('np', args.parallel), ('dim', [args.dim]), ('variant', variants)],
