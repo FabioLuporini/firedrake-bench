@@ -1,9 +1,5 @@
 from pybench import Benchmark, parser
 from firedrake import op2
-import matplotlib.pyplot as plt
-import matplotlib as mpl
-from os import path
-import numpy as np
 
 sizes = [int(2**x) for x in range(1, 6)]
 
@@ -61,6 +57,11 @@ class Meshing(Benchmark):
         return num_cells[self.meta['dim']](size)
 
 if __name__ == '__main__':
+    import matplotlib.pyplot as plt
+    import matplotlib as mpl
+    from os import path
+    import numpy as np
+
     p = parser(description="Plot results for meshing benchmark")
     p.add_argument('--dim', type=int, default=2,
                    help='Dimension of generated DMPlex (default=2)')
