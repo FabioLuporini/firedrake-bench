@@ -5,9 +5,9 @@ import numpy as np
 import uuid
 
 regions = ['Generate', 'Distribute', 'Refine', 'DistributeOverlap']
-petsc_events = { 'Distribute': ['Mesh Partition', 'Mesh Migration'],
-                 'Overlap': ['Mesh Partition', 'Mesh Migration'],
-                 'Redistribute': ['Mesh Partition', 'Mesh Migration']}
+petsc_events = { 'Distribute': ['Mesh Partition', 'Mesh Migration', 'SFBcastBegin', 'SFReduceBegin'],
+                 'Overlap': ['Mesh Partition', 'Mesh Migration', 'SFBcastBegin', 'SFReduceBegin'],
+                 'Redistribute': ['Mesh Partition', 'Mesh Migration', 'SFBcastBegin', 'SFReduceBegin']}
 
 seed = 8957382
 
