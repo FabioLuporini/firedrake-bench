@@ -33,10 +33,10 @@ class Meshing(Benchmark):
         self.meta['np'] = op2.MPI.comm.size
         self.meta['partitioner'] = [args.partitioner]
         self.meta['redistribute'] = [args.redistribute]
-        self.series = {'dim' : self.meta['dim'],
-                       'np': self.meta['np'],
+        self.series = {'np': self.meta['np'],
                        'variant': args.branch}
-        self.params = [('size', self.meta['sizes']),
+        self.params = [('dim', [self.meta['dim']]),
+                       ('size', self.meta['sizes']),
                        ('refine', self.meta['refine']),
                        ('partitioner', self.meta['partitioner']),
                        ('redistribute', self.meta['redistribute'])]
