@@ -85,7 +85,7 @@ class DMPlexMeshing(Meshing):
 
             # Re-distribute plex with new partitioning
             stage_redist.push()
-            with self.timed_region('Distribute'):
+            with self.timed_region('Redistribute'):
                 plex.distribute(overlap)
             stage_redist.pop()
 
