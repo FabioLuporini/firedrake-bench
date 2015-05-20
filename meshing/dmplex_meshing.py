@@ -3,11 +3,13 @@ from firedrake import op2
 from firedrake.petsc import PETSc
 import numpy as np
 import uuid
+import mpi4py
 
 regions = ['Generate', 'Distribute', 'Refine', 'DistributeOverlap']
 petsc_events = { 'Distribute': ['Mesh Partition', 'Mesh Migration', 'SFBcastBegin', 'SFReduceBegin'],
                  'Overlap': ['Mesh Partition', 'Mesh Migration', 'SFBcastBegin', 'SFReduceBegin'],
                  'Redistribute': ['Mesh Partition', 'Mesh Migration', 'SFBcastBegin', 'SFReduceBegin']}
+global_sum_keys = ['messageLength', 'numMessages']
 
 seed = 8957382
 
@@ -94,7 +96,11 @@ class DMPlexMeshing(Meshing):
             for event in events:
                 info = log.Event(event).getPerfInfo(log.Stage(unique+stage))
                 for key in info.keys():
-                    self.register_timing("%s::%s::%s" % (stage, event, key), info[key])
+                    value = info[key]
+                    if key in global_sum_keys:
+                        # Reduce global sum data, eg. total message volume
+                        value = op2.MPI.comm.allreduce(value, op=mpi4py.MPI.SUM)
+                    self.register_timing("%s::%s::%s" % (stage, event, key), value)
 
 
 if __name__ == '__main__':
