@@ -21,15 +21,18 @@ class FiredrakePoisson(FiredrakeBenchmark, Poisson):
 
     def poisson(self, size=32, degree=1, dim=3, preassemble=True, weak=False,
                 print_norm=True, verbose=False, measure_overhead=False,
-                pc='hypre', strong_threshold=0.75, agg_nl=2, max_levels=25):
+                pc='hypre', strong_threshold=0.75, agg_nl=2, max_levels=25,
+                reorder=True, refine=0):
         if weak:
             self.series['weak'] = size
             size = int((size*op2.MPI.comm.size)**(1./dim))
             self.meta['size'] = size
         else:
             self.series['size'] = size
+        self.series['dim'] = dim
         self.series['degree'] = degree
-        self.meta['cells'] = 6*size**dim
+        self.series['reorder'] = reorder
+        self.meta['cells'] = (2 if dim == 2 else 6)*size**dim
         self.meta['vertices'] = (size+1)**dim
         params = {'ksp_type': 'cg',
                   'pc_type': pc,
@@ -43,7 +46,7 @@ class FiredrakePoisson(FiredrakeBenchmark, Poisson):
             params['pc_hypre_boomeramg_print_statistics'] = True
             params['ksp_view'] = True
             params['ksp_monitor'] = True
-        t_, mesh = self.make_mesh(size, dim)
+        t_, mesh = self.make_mesh(size, dim, reorder=reorder, refine=refine)
         self.register_timing('mesh', t_)
         with self.timed_region('setup'):
             V = FunctionSpace(mesh, "Lagrange", degree)

@@ -1,9 +1,9 @@
 from pybench import Benchmark, parser
 
-dim = 3
 # Create a series of meshes that roughly double in number of DOFs
-sizes = [int((1e4*2**x)**(1./dim)) + 1 for x in range(4)]
-cells = [6*x**dim for x in sizes]
+sizes = lambda dim: [int((1e4*2**x)**(1./dim)) + 1 for x in range(4)]
+cells = {2: [2*x**2 for x in sizes(2)],
+         3: [6*x**3 for x in sizes(3)]}
 r0 = ['DOLFIN', 'Firedrake']
 regions = ['matrix assembly', 'rhs assembly', 'solve']
 
@@ -24,6 +24,8 @@ class Poisson(Benchmark):
 
 if __name__ == '__main__':
     p = parser(description="Plot results for Poisson benchmark")
+    p.add_argument('--dim', type=int, default=3,
+                   help='problem dimension to plot')
     p.add_argument('-d', '--degree', type=int, nargs='+',
                    help='polynomial degrees to plot')
     p.add_argument('-m', '--size', type=int, nargs='+',
@@ -36,16 +38,17 @@ if __name__ == '__main__':
     variants = args.variant or ['Firedrake', 'DOLFIN']
     groups = ['variant'] if len(variants) > 1 else []
     degrees = args.degree or [1, 2, 3]
+    dim = args.dim
     if args.sequential:
         b = Poisson(resultsdir=args.resultsdir, plotdir=args.plotdir)
         b.combine_series([('np', [1]), ('variant', variants),
-                          ('degree', degrees), ('size', args.size or sizes)])
+                          ('degree', degrees), ('size', args.size or sizes(dim))])
         b.plot(xaxis='size', regions=regions, xlabel='mesh size (cells)',
-               xvalues=cells, kinds='plot,loglog', groups=groups,
+               xvalues=cells[dim], kinds='plot,loglog', groups=groups,
                title='Poisson (sequential, 3D, polynomial degree %(degree)d)')
         if 'DOLFIN' in variants:
             b.plot(xaxis='size', regions=regions, xlabel='mesh size (cells)',
-                   xvalues=cells, kinds='plot', groups=groups,
+                   xvalues=cells[dim], kinds='plot', groups=groups,
                    ylabel='Speedup relative to DOLFIN', speedup=('DOLFIN',),
                    title='Poisson (sequential, 3D)')
     if args.weak:
@@ -55,7 +58,7 @@ if __name__ == '__main__':
             dofs = lambda n: (int((size*n)**(1./dim))*degree+1)**dim
             doflabel = lambda n: '%.1fM' % (dofs(n)/1e6) if dofs(n) > 1e6 else '%dk' % (dofs(n)/1e3)
             b = Poisson(benchmark='PoissonWeak', resultsdir=args.resultsdir, plotdir=args.plotdir)
-            b.combine_series([('np', args.weak), ('weak', [size]),
+            b.combine_series([('np', args.weak), ('weak', [size]), ('dim', [dim]),
                               ('variant', variants), ('degree', [degree])],
                              filename='Poisson')
             dpp = dofs(args.weak[-1])/(1000*args.weak[-1])
@@ -122,7 +125,7 @@ if __name__ == '__main__':
                 xticklabels = ['%d\n%s' % (n, doflabel(n)) for n in args.parallel]
                 xlabel = 'Number of cores / DOFs per core'
                 b = Poisson(benchmark='PoissonStrong', resultsdir=args.resultsdir, plotdir=args.plotdir)
-                b.combine_series([('np', args.parallel), ('variant', variants),
+                b.combine_series([('np', args.parallel), ('variant', variants), ('dim', [dim]),
                                   ('degree', [degree]), ('size', [size])],
                                  filename='Poisson')
                 b.plot(xaxis='np', regions=regions, xlabel=xlabel,
