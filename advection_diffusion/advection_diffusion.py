@@ -1,10 +1,9 @@
 from pybench import Benchmark, parser
 
-dim = 2
 # Create a series of meshes that roughly double in number of DOFs
-sizes = [125, 176, 250, 354, 500]
-cells = [2*x**dim for x in sizes]
-dofs = [(x+1)**dim for x in sizes]
+sizes = lambda dim: [int((1e4*2**x)**(1./dim)) + 1 for x in range(4)]
+cells = {2: [2*x**2 for x in sizes(2)],
+         3: [6*x**3 for x in sizes(3)]}
 regions = ['advection RHS', 'diffusion RHS', 'advection solve', 'diffusion solve']
 
 
@@ -29,6 +28,8 @@ class AdvectionDiffusion(Benchmark):
 
 if __name__ == '__main__':
     p = parser(description="Plot results for advection-diffusion benchmark")
+    p.add_argument('--dim', type=int, default=3,
+                   help='problem dimension to plot')
     p.add_argument('-d', '--degree', type=int, nargs='+',
                    help='polynomial degrees to plot')
     p.add_argument('-m', '--size', type=int, nargs='+',
@@ -38,12 +39,13 @@ if __name__ == '__main__':
     variants = args.variant or ['Firedrake', 'DOLFIN']
     groups = ['variant'] if len(variants) > 1 else []
     degrees = args.degree or [1, 2, 3]
+    dim = args.dim
     if args.sequential:
         b = AdvectionDiffusion(resultsdir=args.resultsdir, plotdir=args.plotdir)
         b.combine_series([('np', [1]), ('variant', variants),
-                          ('size', args.size or sizes)])
+                          ('size', args.size or sizes(dim))])
         b.plot(xaxis='size', regions=regions, xlabel='mesh size (cells)',
-               xvalues=cells, kinds='plot,loglog', groups=groups,
+               xvalues=cells[dim], kinds='plot,loglog', groups=groups,
                title='Advection-diffusion (sequential, 2D, polynomial degree %(degree)d)')
         b.plot(xaxis='degree', regions=regions, xlabel='Polynomial degree',
                kinds='bar,barlog', groups=groups,
@@ -57,7 +59,7 @@ if __name__ == '__main__':
             b = AdvectionDiffusion(benchmark='AdvectionDiffusionWeak',
                                    params=[('degree', [degree])],
                                    resultsdir=args.resultsdir, plotdir=args.plotdir)
-            b.combine_series([('np', args.weak), ('variant', variants)],
+            b.combine_series([('np', args.weak), ('variant', variants), ('dim', [dim])],
                              filename='AdvectionDiffusion')
             dpp = dofs(args.weak[-1])/(1000*args.weak[-1])
             b.plot(xaxis='np', regions=regions,
@@ -68,8 +70,8 @@ if __name__ == '__main__':
     if args.parallel:
         b = AdvectionDiffusion(benchmark='AdvectionDiffusionParallel',
                                resultsdir=args.resultsdir, plotdir=args.plotdir)
-        b.combine_series([('np', args.parallel), ('variant', variants),
-                          ('size', args.size or sizes)], filename='AdvectionDiffusion')
+        b.combine_series([('np', args.parallel), ('variant', variants), ('dim', [dim]),
+                          ('size', args.size or sizes(dim))], filename='AdvectionDiffusion')
         b.plot(xaxis='np', regions=regions, xlabel='Number of processors',
                kinds='plot,loglog', groups=groups,
                title='Advection-diffusion (strong scaling, 2D, degree %(degree)d, mesh size %(size)s**2)')

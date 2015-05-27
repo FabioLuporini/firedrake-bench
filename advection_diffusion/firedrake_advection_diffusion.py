@@ -17,12 +17,15 @@ class FiredrakeAdvectionDiffusion(FiredrakeBenchmark, AdvectionDiffusion):
                             dt=0.0001, T=0.01, Tend=0.011, diffusivity=0.1,
                             advection=True, diffusion=True, weak=False,
                             print_norm=False, preassemble=True, pc='hypre',
-                            strong_threshold=0.25, agg_nl=2, max_levels=25):
+                            strong_threshold=0.25, agg_nl=2, max_levels=25,
+                            reorder=True, refine=0):
         if weak:
             size = int((1e4*op2.MPI.comm.size)**(1./dim))
             self.meta['size'] = size
         else:
             self.series['size'] = size
+        self.series['dim'] = dim
+        self.series['reorder'] = reorder
         self.meta['cells'] = (2 if dim == 2 else 6)*size**dim
         self.meta['dofs'] = (size+1)**dim
         adv_params = {'ksp_type': 'cg',
@@ -43,7 +46,7 @@ class FiredrakeAdvectionDiffusion(FiredrakeBenchmark, AdvectionDiffusion):
             diff_params['ksp_monitor'] = True
             adv_params['ksp_view'] = True
             adv_params['ksp_monitor'] = True
-        t_, mesh = self.make_mesh(size, dim)
+        t_, mesh = self.make_mesh(size, dim, reorder=reorder, refine=refine)
         self.register_timing('mesh', t_)
 
         with self.timed_region('setup'):
@@ -71,7 +74,7 @@ class FiredrakeAdvectionDiffusion(FiredrakeBenchmark, AdvectionDiffusion):
             r2 = "(pow(x[0]-(0.45+%(T)f), 2.0) + pow(x[1]-0.5, 2.0))"
             fexpr = "0.1 * (exp(-" + r2 + "/(0.4*%(T)f)) / (0.4*pi*%(T)f))"
             t.interpolate(Expression(fexpr % {'T': T}))
-            u.interpolate(Expression((1.0, 0.0)))
+            u.interpolate(Expression((1.0, 0.0) if dim==2 else (1.0, 0.0, 0.0)))
             t.dat.data_ro
             u.dat.data_ro
 
