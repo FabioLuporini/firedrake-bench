@@ -12,23 +12,21 @@ parameters["coffee"]["ap"] = True
 
 class FiredrakeNavierStokes(FiredrakeBenchmark, NavierStokes):
 
-    @memoize
-    @timed
-    def make_mesh(self, scale):
-        return Mesh("meshes/lshape_%s.msh" % scale)
+    def make_mesh(self, scale, reorder=True):
+        return Mesh("meshes/lshape_%s.msh" % scale, reorder=reorder)
 
     def navier_stokes(self, scale=1.0, T=0.1, preassemble=True, save=False,
-                      weak=False, compute_norms=False):
+                      weak=False, compute_norms=False, reorder=True):
         if weak:
             self.series['weak'] = scale
             scale = round(scale/sqrt(op2.MPI.comm.size), 3)
             self.meta['scale'] = scale
         else:
             self.series['scale'] = scale
+        self.series['reorder'] = reorder
         self.meta['cells'] = cells[scale]
         self.meta['vertices'] = vertices[scale]
-        t_, mesh = self.make_mesh(scale)
-        self.register_timing('mesh', t_)
+        mesh = self.make_mesh(scale, reorder=reorder)
 
         with self.timed_region('setup'):
             # Define function spaces (P2-P1)
