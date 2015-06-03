@@ -6,6 +6,11 @@ cells = {2: [2*x**2 for x in sizes(2)],
          3: [6*x**3 for x in sizes(3)]}
 regions = ['cell_integral', 'facet_integral']
 
+# 2D box_cylinder mesh
+mesh_cells = {2: [95821, 191745, 380701, 758975, 1514915],
+              3: [102670, 205569, 415636, 823079, 1666510, 3131699]}
+mesh_vertices = {2: [47917, 95885, 190371, 379520, 757506],
+                 3: [17436, 34387, 68725, 134864, 270393, 505456]}
 
 class Ordering(Benchmark):
 
