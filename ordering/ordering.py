@@ -14,7 +14,6 @@ mesh_vertices = {2: [47917, 95885, 190371, 379520, 757506],
 
 class Ordering(Benchmark):
 
-    params = [('degree', range(1, 4))]
     method = 'reorder'
     benchmark = 'Reorder'
     plotstyle = {'total': {'marker': '*'},

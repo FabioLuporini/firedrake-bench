@@ -9,14 +9,21 @@ parameters["coffee"]["ap"] = True
 
 class FiredrakeOrdering(FiredrakeBenchmark, Ordering):
 
-    def reorder(self, size=64, dim=2, degree=1, reorder=True, refine=0):
+    def reorder(self, size=64, dim=2, degree=1, reorder=True, refine=0,
+                filename="", scale=1.0):
         self.series['size'] = size
+        self.series['scale'] = scale
         self.series['dim'] = dim
         self.series['reorder'] = reorder
+        self.series['filename'] = filename
+        self.params = [('degree', degree)]
         self.meta['cells'] = (2 if dim == 2 else 6)*size**dim
         self.meta['dofs'] = (size+1)**dim
 
-        mesh = self.make_mesh(size, dim, reorder=reorder, refine=refine)
+        if len(filename) > 0:
+            mesh = Mesh("meshes/%s_%s.msh" % (filename, scale), reorder=reorder)
+        else:
+            mesh = self.make_mesh(size, dim, reorder=reorder, refine=refine)
 
         with self.timed_region('setup'):
             V = FunctionSpace(mesh, "CG", degree)
