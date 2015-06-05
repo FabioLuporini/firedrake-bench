@@ -33,19 +33,23 @@ if __name__ == '__main__':
                    help='polynomial degrees to plot')
     p.add_argument('-m', '--size', type=int, nargs='+',
                    help='mesh sizes to plot')
+    p.add_argument('--scale', type=int, nargs='+',
+                   help='mesh scales to plot')
     p.add_argument('-v', '--variant', nargs='+', help='variants to plot')
     args = p.parse_args()
     variants = args.variant or ['Firedrake']
     groups = ['reorder']
     degrees = args.degree or [1, 2, 3]
     dim = args.dim
+    filename = "box_cylinder_%(dim)dd"
+    scale = args.scale or [0.25] if dim == 2 else [0.3]
     if args.parallel:
         b = Ordering(benchmark='ReorderingParallel', 
                     resultsdir=args.resultsdir, plotdir=args.plotdir)
         b.combine_series([('np', args.parallel), ('variant', variants),
-                          ('dim', [dim]), ('reorder', [True, False]), 
+                          ('dim', [dim]), ('reorder', [True, False]), ('scale', scale),
                           ('size', args.size or sizes(dim))], filename='Reorder')
         b.plot(xaxis='np', regions=regions, xlabel='Number of processors',
                kinds='plot,loglog', groups=groups, format='pdf',
-               title='RCM Reordering (strong scaling, %(dim)dD, degree %(degree)d, mesh size %(size)s**2)')
+               title='RCM Reordering (strong scaling, %(dim)dD, mesh size %(size)s**2)')
 
