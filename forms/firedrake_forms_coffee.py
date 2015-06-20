@@ -3,9 +3,9 @@ from firedrake import *
 
 import os
 
-opt_name = ['plain', 'quadrature-O', 'tensor', 'uflacs', 'coffee-base', 'coffee-auto']
+opt_name = ['plain', 'quadrature-O', 'tensor', 'uflacs', 'coffee-O1', 'coffee-O3', 'coffee-O4']
 speedup_opt_name = [i for i in opt_name if i not in ['plain']]
-form = 'hyperelasticity'
+form = 'mass'
 form_max_nf = {
     'mass': 3,
     'helmholtz': 3,
@@ -31,7 +31,7 @@ class FiredrakeFormsCoffee(FiredrakeForms):
     def forms(self, q=1, p=1, dim=3, max_nf=3, form='mass', opt='plain'):
         if opt in ["plain"]:
             parameters["form_compiler"]["representation"] = "quadrature"
-            parameters["form_compiler"]['optimize'] = False
+            parameters["form_compiler"]['optimize'] = True
             parameters["form_compiler"]["pyop2-ir"] = True
             parameters["coffee"] = {
                 "compiler": os.environ.get('PYOP2_BACKEND_COMPILER', 'gnu'),
@@ -39,7 +39,7 @@ class FiredrakeFormsCoffee(FiredrakeForms):
             }
         if opt in ["quadrature-O"]:
             parameters["form_compiler"]["representation"] = "quadrature"
-            parameters["form_compiler"]['optimize'] = True
+            parameters["form_compiler"]['optimize'] = "ffc -O"
             parameters["form_compiler"]["pyop2-ir"] = True
             parameters["coffee"] = {
                 "compiler": os.environ.get('PYOP2_BACKEND_COMPILER', 'gnu'),
@@ -61,23 +61,32 @@ class FiredrakeFormsCoffee(FiredrakeForms):
                 "compiler": os.environ.get('PYOP2_BACKEND_COMPILER', 'gnu'),
                 "simd_isa": os.environ.get('PYOP2_SIMD_ISA', 'sse')
             }
-        if opt in ["coffee-base"]:
+        if opt in ["coffee-O1"]:
             parameters["form_compiler"]["representation"] = "quadrature"
-            parameters["form_compiler"]['optimize'] = False
+            parameters["form_compiler"]['optimize'] = True
             parameters["form_compiler"]["pyop2-ir"] = True
             parameters["coffee"] = {
                 "compiler": os.environ.get('PYOP2_BACKEND_COMPILER', 'gnu'),
                 "simd_isa": os.environ.get('PYOP2_SIMD_ISA', 'sse'),
                 "O1": True
             }
-        if opt in ["coffee-auto"]:
+        if opt in ["coffee-O3"]:
             parameters["form_compiler"]["representation"] = "quadrature"
-            parameters["form_compiler"]['optimize'] = False
+            parameters["form_compiler"]['optimize'] = True
             parameters["form_compiler"]["pyop2-ir"] = True
             parameters["coffee"] = {
                 "compiler": os.environ.get('PYOP2_BACKEND_COMPILER', 'gnu'),
                 "simd_isa": os.environ.get('PYOP2_SIMD_ISA', 'sse'),
-                "autotune": True
+                "O3": True
+            }
+        if opt in ["coffee-O4"]:
+            parameters["form_compiler"]["representation"] = "quadrature"
+            parameters["form_compiler"]['optimize'] = True
+            parameters["form_compiler"]["pyop2-ir"] = True
+            parameters["coffee"] = {
+                "compiler": os.environ.get('PYOP2_BACKEND_COMPILER', 'gnu'),
+                "simd_isa": os.environ.get('PYOP2_SIMD_ISA', 'sse'),
+                "O4": True
             }
         super(FiredrakeFormsCoffee, self).forms(q, p, dim, form_max_nf[form], form, opt=opt)
 
