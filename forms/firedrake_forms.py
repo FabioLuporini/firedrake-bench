@@ -123,8 +123,7 @@ class FiredrakeForms(Forms):
         return False
 
     def forms(self, q=1, p=1, dim=3, max_nf=3, form='mass', dump_kernel=False, opt=None):
-        test_name = "opt%s_" % opt + "form%s_q%d_p%d_nf%d"
-        task = 'Assemble cells'
+        test_name = "%s_" % opt + "form%s_q%d_p%d_nf%d"
 
         if self._is_special_case(opt, form):
             for nf in range(max_nf + 1):
@@ -132,7 +131,6 @@ class FiredrakeForms(Forms):
                 this_nf = 'nf %d' % nf
                 self.ffc_failures[this_test_name] = this_nf
                 self.regions[this_nf] = sys.float_info.max
-            self.register_timing(task, sys.float_info.max)
             return
 
         mesh = meshes[dim]
@@ -154,7 +152,6 @@ class FiredrakeForms(Forms):
                     with open('kernels/f_%s%d_q%d_p%d_dim%d_nf%d.c' % (form, i, q, p, dim, nf), 'w') as fil:
                         fil.write(k[-1].code)
         t = get_timers(reset=True)
-        self.register_timing(task, t[task].total)
 
 if __name__ == '__main__':
     op2.init(log_level='WARNING')
