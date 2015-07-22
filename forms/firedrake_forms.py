@@ -117,7 +117,7 @@ class FiredrakeForms(Forms):
                 return
 
     def _is_special_case(self, opt, form):
-        if opt == 'tensor' and form == 'hyperelasticity':
+        if opt == 'ffc-tensor' and form == 'hyperelasticity':
             # - tensor doesn't work with hyperelasticity
             return True
         return False
