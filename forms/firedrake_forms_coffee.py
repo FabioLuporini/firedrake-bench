@@ -11,7 +11,7 @@ form_max_nf = {
     'helmholtz': 3,
     'poisson': 3,
     'elasticity': 3,
-    'hyperelasticity': 0
+    'hyperelasticity': 1
 }
 
 
