@@ -55,7 +55,7 @@ for ax, ((q, p), vals) in zip(grid, sorted(_timings.items())):
     # Plot
     ax.set_title('p = %d' % p, fontsize=fontsize)
     ax.set_ylabel('q = %d' % q, fontsize=fontsize, color='black')
-    ax.set_xticklabels(('quad', 'tens', 'auto', 'ufls', 'cfO1', 'cfO4'), fontsize=fontsize-2)
+    ax.set_xticklabels(('quad', 'tens', 'auto', 'ufls', 'cfO1', 'cfO2'), fontsize=fontsize-4)
     ax.grid(axis='x')
     ax.axhline(y=1, color='black', linestyle='--', linewidth=0.75)
     if q > 1:
@@ -83,6 +83,8 @@ for ax, ((q, p), vals) in zip(grid, sorted(_timings.items())):
         nf_bars = (nf0_bars, nf1_bars, nf2_bars, nf3_bars)
         # Plot refinement
         ax.set_xticks(ind+2*width)
+        # Legend place
+        legend_place = (-1.62, -1.20, 0.95, 1)
     elif sys.argv[2] in ['hyperelasticity']:
         nf_names = ['nf 0', 'nf 1']
         # Compute speed ups
@@ -96,11 +98,13 @@ for ax, ((q, p), vals) in zip(grid, sorted(_timings.items())):
         nf_bars = (nf0_bars, nf1_bars)
         # Plot refinement
         ax.set_xticks(ind+width)
+        # Legend place
+        legend_place = (-1.92, -1.20, 0.95, 1)
     else:
         print "Unrecognized problem name, exiting..."
         sys.exit(0)
 
 # Finally, we're ready to plot !
-plt.legend(nf_bars, nf_names, bbox_to_anchor=(-1.62, -1.20, 0.95, 1), fancybox=True, ncol=6, prop={'size':6})
+plt.legend(nf_bars, nf_names, bbox_to_anchor=legend_place, fancybox=True, ncol=6, prop={'size':6})
 plt.tight_layout()
 plt.show()
