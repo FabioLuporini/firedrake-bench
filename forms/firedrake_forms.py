@@ -1,5 +1,6 @@
 import sys
 import itertools
+import numpy as np
 
 from forms import Forms
 from firedrake import *
@@ -98,11 +99,11 @@ class FiredrakeForms(Forms):
             'firedrake': firedrake_version,
             'pyop2': pyop2_version}
 
-    def _runforms(self, f, A, q, p, nf, max_nf, form, test_name):
+    def _runforms(self, f, A, q, p, nf, max_nf, form, test_name, opt):
         with self.timed_region('nf %d' % nf):
             try:
                 assemble(f, tensor=A)
-                A.M
+                output = A.M
             except (MemoryError, CompilationError):
                 # Got an exception while compiling FFC kernels, likely because
                 # the backend compiler couldn't compile fancy unrolled code
@@ -115,6 +116,16 @@ class FiredrakeForms(Forms):
                 # Test case failed, so set its execution time to float_max
                 self.regions['nf %d' % nf] = sys.float_info.max
                 return
+        # Now check the correctness of numerical results
+        output = output.values.diagonal()
+        key = (q, p, nf, form)
+        if opt == 'plain':
+            self.expected[key] = output
+        else:
+            if key not in self.expected:
+                raise RuntimeError("'plain' version failed")
+            expected = self.expected[key]
+            assert np.allclose(expected, output, rtol=1e-10)
 
     def _is_special_case(self, opt, form):
         if opt == 'ffc-tensor' and form == 'hyperelasticity':
@@ -146,7 +157,7 @@ class FiredrakeForms(Forms):
                 self.regions[this_test_name_nf] = sys.float_info.max
                 continue
             f = eval(form)(q, p, dim, mesh, nf)
-            self._runforms(f, A, q, p, nf, max_nf, form, test_name)
+            self._runforms(f, A, q, p, nf, max_nf, form, test_name, opt)
             if dump_kernel:
                 for i, k in enumerate(f._kernels):
                     with open('kernels/f_%s%d_q%d_p%d_dim%d_nf%d.c' % (form, i, q, p, dim, nf), 'w') as fil:

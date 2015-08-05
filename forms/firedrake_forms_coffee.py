@@ -27,6 +27,7 @@ class FiredrakeFormsCoffee(FiredrakeForms):
     def __init__(self):
         super(FiredrakeFormsCoffee, self).__init__()
         self.ffc_failures = {}
+        self.expected = {}
 
     def forms(self, q=1, p=1, dim=3, max_nf=3, form='mass', opt='plain'):
         if opt in ["plain"]:
