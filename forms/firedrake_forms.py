@@ -105,14 +105,15 @@ class FiredrakeForms(Forms):
                 assemble(f, tensor=A)
                 output = A.M
             except (MemoryError, CompilationError):
-                # Got an exception while compiling FFC kernels, likely because
-                # the backend compiler couldn't compile fancy unrolled code
-                not_nf = [i for i in range(max_nf + 1) if i not in range(nf)]
-                not_p = [i for i in range(1, 4+1) if i not in range(1, p)]
-                not_q = [i for i in range(1, 4+1) if i not in range(1, q)]
-                for n_nf, n_p, n_q in itertools.product(not_nf, not_p, not_q):
-                    not_run_test_name = test_name % (form, n_q, n_p, n_nf)
-                    self.ffc_failures[not_run_test_name] = 'nf %d' % n_nf
+                # Got an exception while generating or compiling FFC kernels
+                if opt != 'ffc-auto':
+                    # Useless to run "larger codes" which would fail anyway, eventually
+                    not_nf = [i for i in range(max_nf + 1) if i not in range(nf)]
+                    not_p = [i for i in range(1, 4+1) if i not in range(1, p)]
+                    not_q = [i for i in range(1, 4+1) if i not in range(1, q)]
+                    for n_nf, n_p, n_q in itertools.product(not_nf, not_p, not_q):
+                        not_run_test_name = test_name % (form, n_q, n_p, n_nf)
+                        self.ffc_failures[not_run_test_name] = 'nf %d' % n_nf
                 # Test case failed, so set its execution time to float_max
                 self.regions['nf %d' % nf] = sys.float_info.max
                 return
