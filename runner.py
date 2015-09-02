@@ -3,14 +3,19 @@ import subprocess
 import os
 import sys
 
-try:
-    with open("runner_progress", "r") as f:
-        progress = int(f.read())
-except:
-    progress = 0
+if len(sys.argv) == 1:
+    try:
+        with open("runner_progress", "r") as f:
+            progress = int(f.read())
+    except:
+        progress = 0
 
-count = 0
-maxcount = 16
+    count = 0
+    maxcount = 16
+else:
+    progress = int(sys.argv[1])
+    count = 0
+    maxcount = 1
 
 
 def qsub(*args):
