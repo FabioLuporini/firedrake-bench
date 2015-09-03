@@ -96,10 +96,10 @@ class DolfinPoisson(Poisson):
         l2 = sqrt(assemble(dot(u - a, u - a) * dx))
         if print_norm and MPI.rank(mpi_comm_world()) == 0:
             print 'L2 error norm:', l2
-        t = timings(TimingClear_clear, TimingType_wall)
+        t = timings(TimingClear_clear, [TimingType_wall])
         for task in ['Apply (PETScMatrix)', 'Apply (PETScVector)', 'Assemble cells',
                      'Build sparsity', 'DirichletBC apply', 'PETSc Krylov solver']:
-            self.register_timing(task, float(t.get(task, 'Total time')))
+            self.register_timing(task, float(t.get(task, 'wall tot')))
 
 if __name__ == '__main__':
     set_log_active(False)
