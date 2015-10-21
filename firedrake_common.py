@@ -20,8 +20,13 @@ class FiredrakeBenchmark(object):
 
     @memoize
     @timed
-    def make_mesh(self, x, dim=2):
-        return UnitSquareMesh(x, x) if dim == 2 else UnitCubeMesh(x, x, x)
+    def make_mesh(self, x, dim=2, refinements=None):
+        mesh = UnitSquareMesh(x, x) if dim == 2 else UnitCubeMesh(x, x, x)
+        if not refinements:
+            return mesh
+        else:
+            mh = MeshHierarchy(mesh, refinements)
+            return mh[-1]
 
     def lhs_overhead(self, a, bcs=None, N=1000):
         A = assemble(a, bcs=bcs)
