@@ -43,37 +43,38 @@ for variant in ("firedrake", "dolfin"):
         # intra node
         for np in (1, 3, 6, 12, 24):
             qsub("-t", "../%s.tpl" % variant, "-j", "%s_s80_d%s_" %
-                 (variant[:2], degree), "-w", "1:0", "-r", "-n", "1",
+                 (variant[:2], degree), "-w", "2:0", "-r", "-n", "1",
                  "--np", str(np), "--", "%s_poisson" % variant,
                  "verbose=True", "size=80", "degree=%s" % degree, "-b",
                  "-s")
         # inter node
         for n in (2, 4, 8, 16, 32, 64):
             qsub("-t", "../%s.tpl" % variant, "-j", "%s_s80_d%s_" %
-                 (variant[:2], degree), "-w", "1:0", "-r", "-n", str(n),
+                 (variant[:2], degree), "-w", "2:0", "-r", "-n", str(n),
                  "--np", "24", "--", "%s_poisson" % variant, "verbose=True",
                  "size=80", "degree=%s" % degree, "-b", "-s")
 
+# 66 cases to here.
 
 # Poisson weak scaling
 for variant in ("firedrake", "dolfin"):
-    for degree in (1, 2, 3):
+    for degree in (1,):# We don't use the 2 and 3 results.
         # intra node
         for np in (1, 3, 6, 12, 24):
             qsub("-t", "../%s.tpl" % variant, "-j", "%s_w1k_d%s_" %
                  (variant[:2], degree), "-w", "0:30", "-r", "-n", "1",
                  "--np", str(np), "--", "%s_poisson" % variant,
-                 "verbose=True", "size=1000", "weak=True", "degree=%s" %
+                 "verbose=True", "size=50000", "weak=True", "degree=%s" %
                  degree, "-b", "-s")
         # inter node
         for n in (2, 4, 8, 16, 32, 64):
             qsub("-t", "../%s.tpl" % variant, "-j", "%s_w1k_d%s_" %
                  (variant[:2], degree), "-w", "0:30", "-r", "-n",
                  str(n), "--np", "24", "--", "%s_poisson" % variant,
-                 "verbose=True", "size=1000", "weak=True", "degree=%s"
+                 "verbose=True", "size=50000", "weak=True", "degree=%s"
                  % degree, "-b", "-s")
 
-
+# 88 cases to here.
 os.chdir("..")
 
 # Wave

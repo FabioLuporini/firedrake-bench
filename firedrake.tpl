@@ -19,10 +19,10 @@ cd $PBS_O_WORKDIR
 
 LOGFILE=%(jobname)s.${PBS_JOBID}.log
 
-module swap PrgEnv-cray PrgEnv-gnu
-module add anaconda
-module use /work/n02/n02/dham/fdrake/modules
-module load firedrake
+#module swap PrgEnv-cray PrgEnv-gnu
+#module add anaconda
+#module use /work/n02/n02/dham/fdrake/modules
+#module load firedrake
 
 export FIREDRAKE_FFC_KERNEL_CACHE_DIR=$WORK/firedrake-cache
 #export FIREDRAKE_FFC_KERNEL_CACHE_DIR=$WORK/firedrake-cache/${PBS_JOBID}
@@ -36,7 +36,8 @@ export PYOP2_CACHE_DIR=$WORK/pyop2-cache
 #export PYOP2_CACHE_DIR=$TMPDIR
 #export LD_LIBRARY_PATH=$ANACONDA_LIB:$LD_LIBRARY_PATH
 #export PYTHONPATH=$WORK/firedrake-bench:$WORK/pybench:$WORK/firedrake:$WORK/PyOP2:$PYTHONPATH
-export PYTHONPATH=$WORK/firedrake-bench:$WORK/pybench:$PYTHONPATH
+#export PYTHONPATH=$WORK/firedrake-bench:$WORK/pybench:$PYTHONPATH
+export PYTHONPATH=$WORK/firedrake-bench:$PYTHONPATH
 export PETSC_OPTIONS=-log_summary
 # Prevent matplotlib from accessing /home
 export HOME=$WORK
