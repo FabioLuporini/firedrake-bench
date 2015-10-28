@@ -9,7 +9,7 @@ from firedrake_common import FiredrakeBenchmark
 
 parameters["coffee"]["licm"] = True
 parameters["coffee"]["ap"] = True
-parameters["assembly_cache"]["enabled"] = False
+parameters["assembly_cache"]["enabled"] = True
 
 
 class FiredrakeWave(FiredrakeBenchmark, Wave):
@@ -66,6 +66,8 @@ class FiredrakeWave(FiredrakeBenchmark, Wave):
         b = assemble(rhs)
         dphi = 0.5 * dtc * p
         dp = dtc * Ml * b
+        p_form = rhs
+        p_const = dtc * Ml
         if measure_overhead:
             repeats = 1000
             tic('phi')
@@ -77,8 +79,10 @@ class FiredrakeWave(FiredrakeBenchmark, Wave):
             tic('p')
             for _ in range(repeats):
                 bcval.assign(sin(2*pi*5*_*dt))
-                assemble(rhs, tensor=b)
-                p += dp
+                #assemble(rhs, tensor=b)
+                #p += dp
+                p += p_const * assemble(p_form)
+                #p += assemble(dt * inner(grad(v), grad(phi))*dx) / assemble(v*dx)
                 bc.apply(p)
                 p.dat.data_ro
             p_overhead = N*toc('p')/repeats
@@ -94,8 +98,11 @@ class FiredrakeWave(FiredrakeBenchmark, Wave):
 
                 with self.timed_region('p'):
                     if lump_mass:
-                        assemble(rhs, tensor=b)
-                        p += dp
+                        #assemble(rhs, tensor=b)
+                        #p += dp
+                        #p += dtc * Ml * b
+                        p += p_const * assemble(p_form)
+                        #p += assemble(dt * inner(grad(v), grad(phi))*dx) / assemble(v*dx)
                         bc.apply(p)
                         p.dat.data_ro
                     else:
