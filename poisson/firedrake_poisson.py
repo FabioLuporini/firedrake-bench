@@ -2,7 +2,7 @@ from poisson import Poisson
 from firedrake import *
 # from pyop2.coffee.ast_plan import V_OP_UAJ
 from pyop2.profiling import get_timers
-
+import numpy as np
 from firedrake_common import FiredrakeBenchmark
 
 initial = {2: "32*pi*pi*cos(4*pi*x[0])*sin(4*pi*x[1])",
@@ -24,10 +24,14 @@ class FiredrakePoisson(FiredrakeBenchmark, Poisson):
                 pc='hypre', strong_threshold=0.75, agg_nl=2, max_levels=25):
         if weak:
             self.series['weak'] = size
+            # How many times do we want to refine on each processor?
+            refinements = max(int(np.log(size)/np.log(2**dim)) - 2, 0)
             size = int((size*op2.MPI.comm.size)**(1./dim))
-            self.meta['size'] = size
+            size /= 2**refinements
+            self.meta['size'] = size * 2**refinements
         else:
             self.series['size'] = size
+            refinements = None
         self.series['degree'] = degree
         self.meta['cells'] = 6*size**dim
         self.meta['vertices'] = (size+1)**dim
@@ -43,7 +47,7 @@ class FiredrakePoisson(FiredrakeBenchmark, Poisson):
             params['pc_hypre_boomeramg_print_statistics'] = True
             params['ksp_view'] = True
             params['ksp_monitor'] = True
-        t_, mesh = self.make_mesh(size, dim)
+        t_, mesh = self.make_mesh(size, dim, refinements)
         self.register_timing('mesh', t_)
         with self.timed_region('setup'):
             V = FunctionSpace(mesh, "Lagrange", degree)
