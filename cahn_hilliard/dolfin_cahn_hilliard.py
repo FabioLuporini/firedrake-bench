@@ -3,6 +3,7 @@ import sys
 import numpy as np
 from petsc4py import PETSc
 from pybench import timed
+from common import get_petsc_version
 from dolfin import *
 
 
@@ -58,7 +59,8 @@ def make_mesh(x):
 class DolfinCahnHilliard(CahnHilliard):
     series = {'np': MPI.size(mpi_comm_world()), 'variant': 'DOLFIN'}
     meta = {'dolfin_version': dolfin_version(),
-            'dolfin_commit': git_commit_hash()}
+            'dolfin_commit': git_commit_hash(),
+            'petsc_version': get_petsc_version()}
     meshes = {}
 
     def cahn_hilliard(self, size=96, steps=10, degree=1, pc='fieldsplit',
