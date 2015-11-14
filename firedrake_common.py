@@ -2,7 +2,9 @@ from copy import copy
 
 from firedrake import *
 from firedrake import __version__ as firedrake_version
+from firedrake.mg import impl
 from firedrake.utils import memoize
+
 from pyop2 import __version__ as pyop2_version
 from pyop2.profiling import tic, toc
 
@@ -24,9 +26,16 @@ class FiredrakeBenchmark(object):
         mesh = UnitSquareMesh(x, x) if dim == 2 else UnitCubeMesh(x, x, x)
         if not refinements:
             return mesh
-        else:
-            mh = MeshHierarchy(mesh, refinements)
-            return mh[-1]
+        dm = mesh._plex
+        dm.setRefinementUniform(True)
+        for i in range(refinements):
+            dm = dm.refine()
+            for lbl in ["interior_facets", "op2_core", "op2_non_core",
+                        "op2_exec_halo", "op2_non_exec_halo"]:
+                dm.removeLabel(lbl)
+            impl.filter_exterior_facet_labels(dm)
+
+        return Mesh(dm, distribute=False)
 
     def lhs_overhead(self, a, bcs=None, N=1000):
         A = assemble(a, bcs=bcs)
