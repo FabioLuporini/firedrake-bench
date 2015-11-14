@@ -1,3 +1,5 @@
+import numpy as np
+
 from cahn_hilliard import CahnHilliard, lmbda, dt, theta
 from firedrake import *
 from pyop2.profiling import get_timers, timing
@@ -14,12 +16,17 @@ class FiredrakeCahnHilliard(FiredrakeBenchmark, CahnHilliard):
                       inner_ksp='preonly', ksp='gmres', maxit=1, weak=False,
                       measure_overhead=False, save=False, compute_norms=True,
                       verbose=False):
+        dim = 2
         if weak:
             self.series['weak'] = size
-            size = int((size*op2.MPI.comm.size)**0.5)
+            # How many times do we want to refine on each processor?
+            refinements = max(int(np.log(size)/np.log(2**dim)) - 2, 0)
+            size = int((size*op2.MPI.comm.size)**(1./dim))
             self.meta['size'] = size
+            size /= 2**refinements
         else:
             self.series['size'] = size
+            refinements = None
         self.meta['cells'] = 2*size**2
         self.meta['vertices'] = (size+1)**2
         params = {'pc_type': pc,
@@ -45,7 +52,7 @@ class FiredrakeCahnHilliard(FiredrakeBenchmark, CahnHilliard):
             params['snes_view'] = True
             params['snes_monitor'] = True
 
-        t_, mesh = self.make_mesh(size)
+        t_, mesh = self.make_mesh(size, dim, refinements)
         self.register_timing('mesh', t_)
 
         with self.timed_region('setup'):
