@@ -23,12 +23,14 @@ class FiredrakeCahnHilliard(FiredrakeBenchmark, CahnHilliard):
             refinements = max(int(np.log(size)/np.log(2**dim)) - 2, 0)
             size = int((size*op2.MPI.comm.size)**(1./dim))
             self.meta['size'] = size
+            self.meta['cells'] = 2*size**2
+            self.meta['vertices'] = (size+1)**2
             size /= 2**refinements
         else:
             self.series['size'] = size
+            self.meta['cells'] = 2*size**2
+            self.meta['vertices'] = (size+1)**2
             refinements = None
-        self.meta['cells'] = 2*size**2
-        self.meta['vertices'] = (size+1)**2
         params = {'pc_type': pc,
                   'ksp_type': ksp,
                   'snes_rtol': 1e-9,
