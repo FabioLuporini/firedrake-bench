@@ -6,6 +6,9 @@ from pybench import timed
 from common import get_petsc_version
 from dolfin import *
 
+parameters['reorder_cells_gps'] = True
+parameters['reorder_vertices_gps'] = True
+
 
 # Class representing the intial conditions
 u_init_code = """
