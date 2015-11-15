@@ -22,8 +22,11 @@ class FiredrakeBenchmark(object):
 
     @memoize
     @timed
-    def make_mesh(self, x, dim=2, refinements=None):
-        mesh = UnitSquareMesh(x, x) if dim == 2 else UnitCubeMesh(x, x, x)
+    def make_mesh(self, x, dim=2, refinements=None, reorder=True):
+        if dim == 2:
+            mesh = UnitSquareMesh(x, x, reorder=reorder)
+        else:
+            mesh = UnitCubeMesh(x, x, x, reorder=reorder)
         if not refinements:
             return mesh
         dm = mesh._plex
@@ -35,7 +38,7 @@ class FiredrakeBenchmark(object):
                 dm.removeLabel(lbl)
             impl.filter_exterior_facet_labels(dm)
 
-        return Mesh(dm, distribute=False)
+        return Mesh(dm, distribute=False, reorder=reorder)
 
     def lhs_overhead(self, a, bcs=None, N=1000):
         A = assemble(a, bcs=bcs)
